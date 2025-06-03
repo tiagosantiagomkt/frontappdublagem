@@ -12,8 +12,13 @@ RUN apk add --no-cache \
     git \
     cmake
 
-# Instala bibliotecas Python necessárias
-RUN pip3 install --no-cache-dir \
+# Cria e ativa um ambiente virtual Python
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Atualiza pip e instala as bibliotecas Python no ambiente virtual
+RUN pip3 install --upgrade pip && \
+    pip3 install --no-cache-dir \
     openai-whisper \
     googletrans==3.1.0a0 \
     gTTS
@@ -21,7 +26,10 @@ RUN pip3 install --no-cache-dir \
 # Clona e compila whisper.cpp
 RUN git clone https://github.com/ggerganov/whisper.cpp.git && \
     cd whisper.cpp && \
-    make
+    make && \
+    cp whisper /usr/local/bin/ && \
+    cd .. && \
+    rm -rf whisper.cpp
 
 # Copia os arquivos de configuração
 COPY package*.json ./
