@@ -1,75 +1,57 @@
 'use client';
 
-import VideoSearch from '@/components/VideoSearch';
-import { useState } from 'react';
-import axios, { AxiosError } from 'axios';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
-  const [videoUrl, setVideoUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [processedVideo, setProcessedVideo] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [targetLanguage, setTargetLanguage] = useState('pt');
 
-  const handleSubmit = async (url: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!fileInputRef.current?.files?.[0]) {
+      setMessage('Por favor, selecione um vídeo para processar');
+      return;
+    }
+
+    const file = fileInputRef.current.files[0];
+    const formData = new FormData();
+    formData.append('video', file);
+    formData.append('targetLanguage', targetLanguage);
+
     try {
       setIsLoading(true);
       setMessage('');
       setProcessedVideo(null);
       
-      console.log('Enviando URL para processamento:', url);
+      console.log('Enviando vídeo para processamento...');
       
-      const response = await axios.post('/api/webhook', 
-        { videoUrl: url },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 35000, // 35 segundos
-        }
-      );
-
-      console.log('Resposta do servidor:', response.data);
-      
-      if (response.data.success) {
-        if (response.data.videoUrl) {
-          setProcessedVideo(response.data.videoUrl);
-          setMessage('Vídeo processado com sucesso!');
-        } else {
-          setMessage(response.data.message || 'Vídeo enviado! Aguardando processamento...');
-        }
-        setVideoUrl('');
-      } else {
-        throw new Error('Resposta do servidor indica falha');
-      }
-    } catch (error) {
-      console.error('Detalhes do erro:', {
-        error,
-        isAxiosError: axios.isAxiosError(error),
-        status: axios.isAxiosError(error) ? (error as AxiosError).response?.status : null,
-        data: axios.isAxiosError(error) ? (error as AxiosError).response?.data : null,
-        message: axios.isAxiosError(error) ? (error as AxiosError).message : String(error)
+      const response = await fetch('/api/process-video', {
+        method: 'POST',
+        body: formData,
       });
 
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.error || error.message;
-        
-        if (error.code === 'ECONNABORTED') {
-          setMessage('O processamento está demorando mais que o esperado. Por favor, tente novamente.');
-        } else if (error.response?.status === 429) {
-          setMessage('Muitas requisições. Aguarde um momento e tente novamente.');
-        } else if (error.response?.status === 400) {
-          setMessage(errorMessage || 'URL inválida. Verifique o link e tente novamente.');
-        } else if (error.response?.status === 503 || error.response?.status === 504) {
-          setMessage(errorMessage || 'Servidor temporariamente indisponível. Tente novamente em alguns minutos.');
-        } else if (!error.response) {
-          setMessage('Erro de conexão com o servidor. Verifique sua internet e tente novamente.');
-        } else {
-          setMessage(errorMessage || 'Erro ao processar o vídeo. Tente novamente mais tarde.');
-        }
-      } else {
-        setMessage('Erro inesperado. Por favor, tente novamente.');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao processar o vídeo');
       }
+
+      // Criar URL do blob para o vídeo processado
+      const videoBlob = await response.blob();
+      const videoUrl = URL.createObjectURL(videoBlob);
+      setProcessedVideo(videoUrl);
+      setMessage('Vídeo processado com sucesso!');
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Erro ao processar vídeo:', error);
+      setMessage(error instanceof Error ? error.message : 'Erro ao processar o vídeo');
     } finally {
       setIsLoading(false);
     }
@@ -82,15 +64,86 @@ export default function Home() {
           App de Dublagem
         </h1>
         <p className="text-text-secondary text-center mb-12">
-          Cole o link do seu vídeo abaixo para começar a dublagem
+          Selecione um vídeo para começar a dublagem
         </p>
         
-        <VideoSearch onSubmit={handleSubmit} isLoading={isLoading} />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex flex-col space-y-4">
+            <label htmlFor="video" className="text-text-primary font-medium">
+              Selecione o vídeo:
+            </label>
+            <input
+              type="file"
+              id="video"
+              ref={fileInputRef}
+              accept="video/*"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="flex flex-col space-y-4">
+            <label htmlFor="language" className="text-text-primary font-medium">
+              Idioma de destino:
+            </label>
+            <select
+              id="language"
+              value={targetLanguage}
+              onChange={(e) => setTargetLanguage(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+              disabled={isLoading}
+            >
+              <option value="pt">Português</option>
+              <option value="en">Inglês</option>
+              <option value="es">Espanhol</option>
+              <option value="fr">Francês</option>
+              <option value="de">Alemão</option>
+              <option value="it">Italiano</option>
+              <option value="ja">Japonês</option>
+              <option value="ko">Coreano</option>
+              <option value="zh">Chinês</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-colors ${
+              isLoading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-primary hover:bg-primary-hover'
+            }`}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                  <circle 
+                    className="opacity-25" 
+                    cx="12" 
+                    cy="12" 
+                    r="10" 
+                    stroke="currentColor" 
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path 
+                    className="opacity-75" 
+                    fill="currentColor" 
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Processando...
+              </div>
+            ) : (
+              'Processar Vídeo'
+            )}
+          </button>
+        </form>
         
         {message && (
           <div 
             className={`mt-4 p-4 rounded-lg text-center ${
-              message.includes('sucesso') || message.includes('Aguardando')
+              message.includes('sucesso')
                 ? 'bg-green-100 text-green-700' 
                 : 'bg-red-100 text-red-700'
             }`}
@@ -113,6 +166,13 @@ export default function Home() {
                 Seu navegador não suporta a tag de vídeo.
               </video>
             </div>
+            <a
+              href={processedVideo}
+              download="video_dublado.mp4"
+              className="mt-4 inline-block py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+            >
+              Baixar Vídeo
+            </a>
           </div>
         )}
 

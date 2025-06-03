@@ -12,27 +12,37 @@ export default function TermsAndLicense() {
 
         <h2 className="text-2xl font-semibold text-text-primary mt-6">2. Uso Permitido</h2>
         <p className="text-text-secondary mb-4">
-          Você pode utilizar este software para fins pessoais ou comerciais, inclusive integrar aos seus próprios sistemas 
+          Você pode utilizar este software para fins pessoais ou comerciais, inclusive integrá-lo aos seus próprios sistemas 
           ou serviços, respeitando as licenças dos componentes utilizados.
         </p>
 
-        <h2 className="text-2xl font-semibold text-text-primary mt-6">3. Proteção de Dados (LGPD)</h2>
+        <h2 className="text-2xl font-semibold text-text-primary mt-6">3. Privacidade e Proteção de Dados (LGPD)</h2>
         <p className="text-text-secondary mb-4">
-          Não coletamos dados pessoais sensíveis dos usuários finais por padrão.
+          O sistema não coleta dados pessoais identificáveis dos usuários.
         </p>
         <p className="text-text-secondary mb-4">
-          No entanto, ao utilizar o sistema para processar vídeos ou áudios que contenham informações pessoais, 
-          o <strong>usuário é o controlador desses dados</strong>, sendo responsável por garantir o tratamento 
-          conforme a <strong>Lei Geral de Proteção de Dados (LGPD)</strong>.
+          No entanto, algumas funcionalidades permitem que o usuário envie voluntariamente arquivos contendo cookies 
+          do navegador (<code>cookies.txt</code>) com o único propósito de autenticar o acesso a vídeos protegidos 
+          por login, idade ou região.
         </p>
+
+        <h3 className="text-xl font-semibold text-text-primary mt-6">Sobre o uso de cookies:</h3>
+        <ul className="list-disc pl-6 text-text-secondary mb-4">
+          <li>O envio é <strong>opcional</strong> e de responsabilidade do usuário.</li>
+          <li>O conteúdo do arquivo é usado <strong>somente durante o download</strong> do vídeo.</li>
+          <li>O arquivo é <strong>apagado imediatamente após a operação</strong>.</li>
+          <li>Nenhum dado contido nos cookies é retido, compartilhado ou armazenado.</li>
+        </ul>
+
         <p className="text-text-secondary mb-4">
-          Não armazenamos os vídeos, áudios ou textos processados além do tempo necessário para execução da tarefa.
+          O usuário é o controlador de quaisquer dados pessoais presentes no vídeo ou no cookie enviado, 
+          sendo responsável pelo tratamento conforme a <strong>Lei Geral de Proteção de Dados (LGPD)</strong>.
         </p>
 
         <h2 className="text-2xl font-semibold text-text-primary mt-6">4. Responsabilidade</h2>
         <p className="text-text-secondary mb-4">
           Este software é fornecido "no estado em que se encontra". Não garantimos resultado específico, 
-          desempenho ou disponibilidade contínua.
+          desempenho ou disponibilidade contínua. O uso é feito por conta e risco do usuário.
         </p>
 
         <h2 className="text-2xl font-semibold text-text-primary mt-6">5. Contato</h2>
@@ -43,6 +53,32 @@ export default function TermsAndLicense() {
           <strong>Naze Tecnologia Ltda</strong><br />
           CNPJ: 58.204.061/0001-50<br />
           E-mail: contato@naze.com.br
+        </div>
+
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8">
+          <h2 className="text-2xl font-semibold text-text-primary mb-4">🔐 Sobre cookies.txt</h2>
+          <p className="text-text-secondary mb-4">
+            Alguns vídeos do YouTube exigem autenticação para serem baixados (ex: restrição de idade, 
+            login obrigatório, vídeos privados).
+          </p>
+          <p className="text-text-secondary mb-4">
+            Esta API permite que você envie um arquivo <code>cookies.txt</code> exportado do seu navegador, 
+            para autenticar temporariamente o download.
+          </p>
+
+          <h3 className="text-xl font-semibold text-text-primary mt-4 mb-2">Como usar:</h3>
+          <ol className="list-decimal pl-6 text-text-secondary mb-4">
+            <li>Instale a extensão <a href="https://chrome.google.com/webstore/detail/get-cookiestxt/iekmljdncgmfkjmjepjehhgckfbedpor" 
+              className="text-primary hover:text-primary-hover">Get cookies.txt</a></li>
+            <li>Acesse <a href="https://youtube.com" className="text-primary hover:text-primary-hover">youtube.com</a> logado 
+              na sua conta</li>
+            <li>Clique na extensão e salve o <code>cookies.txt</code></li>
+            <li>Envie esse arquivo junto à requisição usando <code>curl</code> ou via frontend</li>
+          </ol>
+
+          <p className="text-text-secondary font-semibold">
+            Importante: o arquivo é apagado automaticamente após o uso. Nenhum dado é retido ou armazenado.
+          </p>
         </div>
       </section>
 
