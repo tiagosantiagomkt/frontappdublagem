@@ -8,26 +8,25 @@ export default function Home() {
   const [videoUrl, setVideoUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [processedVideo, setProcessedVideo] = useState<string | null>(null);
 
   const handleSubmit = async (url: string) => {
     try {
       setIsLoading(true);
       setMessage('');
+      setProcessedVideo(null);
       
-      const response = await axios.post(
-        'https://n8n.naze.com.br/webhook/812ee1f7-23af-4179-b76d-dbc2367d4580',
-        { videoUrl: url },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          timeout: 10000, // 10 segundos de timeout
-        }
-      );
+      const response = await axios.post('/api/webhook', { videoUrl: url });
 
       console.log('Resposta do servidor:', response.data);
-      setMessage('Link enviado com sucesso!');
+      
+      if (response.data.videoUrl) {
+        setProcessedVideo(response.data.videoUrl);
+        setMessage('Vídeo processado com sucesso!');
+      } else {
+        setMessage('Vídeo enviado! Aguardando processamento...');
+      }
+      
       setVideoUrl('');
     } catch (error) {
       console.error('Detalhes do erro:', {
@@ -39,17 +38,15 @@ export default function Home() {
 
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED') {
-          setMessage('Tempo limite excedido. Tente novamente.');
+          setMessage('O processamento está demorando mais que o esperado. Por favor, aguarde.');
         } else if (error.response?.status === 429) {
           setMessage('Muitas requisições. Aguarde um momento e tente novamente.');
-        } else if (error.response?.status === 403) {
-          setMessage('Acesso não autorizado. Verifique as permissões.');
-        } else if (error.response?.status === 404) {
-          setMessage('Endpoint não encontrado. Verifique a URL.');
+        } else if (error.response?.status === 400) {
+          setMessage(error.response.data.error || 'URL inválida. Verifique o link e tente novamente.');
         } else if (!error.response) {
-          setMessage('Erro de conexão. Verifique sua internet.');
+          setMessage('Erro de conexão com o servidor. Tente novamente.');
         } else {
-          setMessage(`Erro ao enviar o link (${error.response.status}). Tente novamente.`);
+          setMessage('Erro ao processar o vídeo. Tente novamente mais tarde.');
         }
       } else {
         setMessage('Erro inesperado. Tente novamente.');
@@ -74,12 +71,29 @@ export default function Home() {
         {message && (
           <div 
             className={`mt-4 p-4 rounded-lg text-center ${
-              message.includes('sucesso') 
+              message.includes('sucesso') || message.includes('Aguardando')
                 ? 'bg-green-100 text-green-700' 
                 : 'bg-red-100 text-red-700'
             }`}
           >
             {message}
+          </div>
+        )}
+
+        {processedVideo && (
+          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+            <h2 className="text-xl font-semibold text-text-primary mb-4">
+              Vídeo Processado
+            </h2>
+            <div className="aspect-video rounded-lg overflow-hidden bg-black">
+              <video 
+                src={processedVideo} 
+                controls 
+                className="w-full h-full"
+              >
+                Seu navegador não suporta a tag de vídeo.
+              </video>
+            </div>
           </div>
         )}
       </div>
