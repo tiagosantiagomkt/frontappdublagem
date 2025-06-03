@@ -3,6 +3,7 @@
 import VideoSearch from '@/components/VideoSearch';
 import { useState } from 'react';
 import axios, { AxiosError } from 'axios';
+import Link from 'next/link';
 
 export default function Home() {
   const [videoUrl, setVideoUrl] = useState('');
@@ -114,6 +115,18 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        <footer className="mt-16 text-center text-sm text-text-secondary">
+          <p>
+            Ao usar este serviço, você concorda com nossos{' '}
+            <Link href="/termos" className="text-primary hover:text-primary-hover underline">
+              Termos de Uso e Licença
+            </Link>
+          </p>
+          <p className="mt-2">
+            © 2025 – Naze Tecnologia Ltda • CNPJ: 58.204.061/0001-50
+          </p>
+        </footer>
       </div>
     </main>
   );
