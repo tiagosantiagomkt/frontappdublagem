@@ -16,40 +16,58 @@ export default function Home() {
       setMessage('');
       setProcessedVideo(null);
       
-      const response = await axios.post('/api/webhook', { videoUrl: url });
+      console.log('Enviando URL para processamento:', url);
+      
+      const response = await axios.post('/api/webhook', 
+        { videoUrl: url },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 35000, // 35 segundos
+        }
+      );
 
       console.log('Resposta do servidor:', response.data);
       
-      if (response.data.videoUrl) {
-        setProcessedVideo(response.data.videoUrl);
-        setMessage('Vídeo processado com sucesso!');
+      if (response.data.success) {
+        if (response.data.videoUrl) {
+          setProcessedVideo(response.data.videoUrl);
+          setMessage('Vídeo processado com sucesso!');
+        } else {
+          setMessage(response.data.message || 'Vídeo enviado! Aguardando processamento...');
+        }
+        setVideoUrl('');
       } else {
-        setMessage('Vídeo enviado! Aguardando processamento...');
+        throw new Error('Resposta do servidor indica falha');
       }
-      
-      setVideoUrl('');
     } catch (error) {
       console.error('Detalhes do erro:', {
         error,
         isAxiosError: axios.isAxiosError(error),
         status: axios.isAxiosError(error) ? (error as AxiosError).response?.status : null,
+        data: axios.isAxiosError(error) ? (error as AxiosError).response?.data : null,
         message: axios.isAxiosError(error) ? (error as AxiosError).message : String(error)
       });
 
       if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || error.message;
+        
         if (error.code === 'ECONNABORTED') {
-          setMessage('O processamento está demorando mais que o esperado. Por favor, aguarde.');
+          setMessage('O processamento está demorando mais que o esperado. Por favor, tente novamente.');
         } else if (error.response?.status === 429) {
           setMessage('Muitas requisições. Aguarde um momento e tente novamente.');
         } else if (error.response?.status === 400) {
-          setMessage(error.response.data.error || 'URL inválida. Verifique o link e tente novamente.');
+          setMessage(errorMessage || 'URL inválida. Verifique o link e tente novamente.');
+        } else if (error.response?.status === 503 || error.response?.status === 504) {
+          setMessage(errorMessage || 'Servidor temporariamente indisponível. Tente novamente em alguns minutos.');
         } else if (!error.response) {
-          setMessage('Erro de conexão com o servidor. Tente novamente.');
+          setMessage('Erro de conexão com o servidor. Verifique sua internet e tente novamente.');
         } else {
-          setMessage('Erro ao processar o vídeo. Tente novamente mais tarde.');
+          setMessage(errorMessage || 'Erro ao processar o vídeo. Tente novamente mais tarde.');
         }
       } else {
-        setMessage('Erro inesperado. Tente novamente.');
+        setMessage('Erro inesperado. Por favor, tente novamente.');
       }
     } finally {
       setIsLoading(false);
