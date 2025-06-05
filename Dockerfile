@@ -41,7 +41,7 @@ COPY postcss.config.js ./
 COPY tailwind.config.js ./
 
 # Instala as dependências Node.js
-RUN npm ci
+RUN npm install
 
 # Copia o resto dos arquivos
 COPY . .
