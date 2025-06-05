@@ -19,10 +19,29 @@ async function downloadVideo(videoUrl: string, outputPath: string): Promise<void
       throw new Error('URL do YouTube inválida');
     }
 
-    // Obtém informações do vídeo
-    const info = await ytdl.getInfo(videoUrl);
+    // Configurações personalizadas para o ytdl
+    const options = {
+      quality: 'highestvideo',
+      filter: (format: ytdl.videoFormat) => format.container === 'mp4',
+      requestOptions: {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1',
+          'Cookie': ''
+        }
+      }
+    };
+
+    // Obtém informações do vídeo com as opções personalizadas
+    const info = await ytdl.getInfo(videoUrl, options);
     
-    // Pega o formato com melhor qualidade que inclui vídeo e áudio
+    // Encontra o melhor formato disponível
     const format = ytdl.chooseFormat(info.formats, { 
       quality: 'highest',
       filter: 'audioandvideo'
@@ -34,24 +53,42 @@ async function downloadVideo(videoUrl: string, outputPath: string): Promise<void
 
     // Faz o download do vídeo
     return new Promise<void>((resolve, reject) => {
-      const stream = ytdl.downloadFromInfo(info, { format });
+      const stream = ytdl.downloadFromInfo(info, { 
+        ...options,
+        format
+      });
+
       const writeStream = fs.createWriteStream(outputPath);
+
+      let startTime = Date.now();
+      let downloadedBytes = 0;
+
+      stream.on('data', (chunk) => {
+        downloadedBytes += chunk.length;
+        const elapsedTime = (Date.now() - startTime) / 1000;
+        const downloadSpeed = (downloadedBytes / (1024 * 1024) / elapsedTime).toFixed(2);
+        console.log(`Download em progresso: ${downloadSpeed} MB/s`);
+      });
 
       stream.pipe(writeStream);
 
       writeStream.on('finish', () => {
+        console.log('Download concluído com sucesso');
         resolve();
       });
 
       writeStream.on('error', (error) => {
+        console.error('Erro no writeStream:', error);
         reject(error);
       });
 
       stream.on('error', (error) => {
+        console.error('Erro no stream:', error);
         reject(error);
       });
     });
   } catch (error) {
+    console.error('Erro detalhado:', error);
     throw new Error(`Erro ao baixar vídeo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }
