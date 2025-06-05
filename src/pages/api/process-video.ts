@@ -1,7 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { VideoProcessor } from '@/services/videoProcessor';
 import path from 'path';
-import { promises as fs } from 'fs';
+import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import os from 'os';
 import ytdl from 'ytdl-core';
 
@@ -74,7 +75,7 @@ export default async function handler(
 
     // Criar diretório temporário
     const tempDir = path.join(os.tmpdir(), 'video-processing');
-    await fs.mkdir(tempDir, { recursive: true });
+    await fsPromises.mkdir(tempDir, { recursive: true });
 
     // Download do vídeo
     const videoPath = path.join(tempDir, `${Date.now()}.mp4`);
@@ -93,7 +94,7 @@ export default async function handler(
     }
 
     // Lê o arquivo processado
-    const processedVideo = await fs.readFile(result.outputPath);
+    const processedVideo = await fsPromises.readFile(result.outputPath);
 
     // Define os headers para download
     res.setHeader('Content-Type', 'video/mp4');
@@ -107,8 +108,8 @@ export default async function handler(
 
     // Limpa os arquivos temporários
     await Promise.all([
-      fs.unlink(videoPath),
-      fs.unlink(result.outputPath),
+      fsPromises.unlink(videoPath),
+      fsPromises.unlink(result.outputPath),
     ]).catch(console.error);
   } catch (error) {
     console.error('Erro ao processar requisição:', error);
