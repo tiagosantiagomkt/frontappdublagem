@@ -58,11 +58,21 @@ COPY . .
 # Constrói a aplicação
 RUN npm run build
 
+# Copia os arquivos necessários para o modo standalone
+RUN cp -r .next/static .next/standalone/.next/ && \
+    cp -r public .next/standalone/
+
 EXPOSE 3000
 
 # Define variável de ambiente para o modelo Whisper e configurações do Chrome
 ENV WHISPER_MODEL="base" \
-    CHROME_BIN="/usr/bin/google-chrome"
+    CHROME_BIN="/usr/bin/google-chrome" \
+    PORT=3000 \
+    NODE_ENV=production \
+    HOSTNAME=0.0.0.0
 
-# Inicia a aplicação usando o servidor standalone do Next.js
-CMD ["node", ".next/standalone/server.js"] 
+# Muda para o diretório standalone
+WORKDIR /app/.next/standalone
+
+# Inicia a aplicação
+CMD ["node", "server.js"] 
