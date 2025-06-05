@@ -11,12 +11,16 @@ RUN apk add --no-cache \
     python3 \
     py3-pip \
     py3-numpy \
+    py3-scipy \
+    py3-setuptools \
     build-base \
     git \
     cmake \
     python3-dev \
     pkgconfig \
-    linux-headers
+    linux-headers \
+    rust \
+    cargo
 
 # Configura o ambiente Python
 ENV PYTHONUNBUFFERED=1 \
@@ -37,11 +41,10 @@ RUN pip install --no-cache-dir \
     torchaudio==2.2.0+cpu \
     --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Instala as outras dependências Python
-RUN pip install --no-cache-dir \
-    gTTS \
-    googletrans==3.1.0a0 \
-    faster-whisper
+# Instala as dependências Python uma por uma
+RUN pip install --no-cache-dir gTTS && \
+    pip install --no-cache-dir googletrans==3.1.0a0 && \
+    pip install --no-cache-dir faster-whisper
 
 # Clona e compila whisper.cpp como alternativa
 RUN git clone https://github.com/ggerganov/whisper.cpp.git && \
