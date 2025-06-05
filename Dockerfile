@@ -34,14 +34,6 @@ RUN pip install --no-cache-dir \
     googletrans==3.1.0a0 \
     faster-whisper
 
-# Clona e compila whisper.cpp como alternativa
-RUN git clone https://github.com/ggerganov/whisper.cpp.git && \
-    cd whisper.cpp && \
-    make && \
-    install -m 755 whisper /usr/local/bin/ && \
-    cd .. && \
-    rm -rf whisper.cpp
-
 # Copia os arquivos de configuração
 COPY package*.json ./
 COPY tsconfig.json ./
