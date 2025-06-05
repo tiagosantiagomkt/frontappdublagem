@@ -21,7 +21,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get update \
     && apt-get install -y google-chrome-stable \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # Configura o diretório do Chrome
+    && mkdir -p /root/.config/google-chrome \
+    && google-chrome --no-sandbox --headless --disable-gpu --remote-debugging-port=9222 --disable-dev-shm-usage about:blank
 
 # Configura o ambiente Python
 ENV PYTHONUNBUFFERED=1 \

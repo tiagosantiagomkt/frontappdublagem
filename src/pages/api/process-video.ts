@@ -11,6 +11,62 @@ export const config = {
   },
 };
 
+async function downloadVideo(videoUrl: string, outputPath: string): Promise<void> {
+  // Primeira tentativa: sem cookies
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const ytdlp = spawn('yt-dlp', [
+        '-f', 'best[ext=mp4]',
+        '-o', outputPath,
+        '--no-check-certificates',
+        '--no-cache-dir',
+        videoUrl
+      ]);
+
+      let errorOutput = '';
+      ytdlp.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+      });
+
+      ytdlp.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(errorOutput));
+        }
+      });
+    });
+  } catch (error) {
+    // Se falhar, tenta novamente com cookies do Chrome
+    console.log('Tentando download com cookies do Chrome...');
+    await new Promise<void>((resolve, reject) => {
+      const ytdlp = spawn('yt-dlp', [
+        '--cookies-from-browser', 'chrome',
+        '-f', 'best[ext=mp4]',
+        '-o', outputPath,
+        '--no-check-certificates',
+        '--no-cache-dir',
+        videoUrl
+      ]);
+
+      let errorOutput = '';
+      ytdlp.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+        console.error(`yt-dlp error: ${data}`);
+      });
+
+      ytdlp.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          console.error('Erro completo do yt-dlp:', errorOutput);
+          reject(new Error('Não foi possível baixar o vídeo. Por favor, verifique se o URL está correto e se o vídeo está disponível.'));
+        }
+      });
+    });
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -32,33 +88,9 @@ export default async function handler(
     const tempDir = path.join(os.tmpdir(), 'video-processing');
     await fs.mkdir(tempDir, { recursive: true });
 
-    // Download do vídeo usando yt-dlp com cookies do Chrome
+    // Download do vídeo
     const videoPath = path.join(tempDir, `${Date.now()}.mp4`);
-    await new Promise<void>((resolve, reject) => {
-      const ytdlp = spawn('yt-dlp', [
-        '--cookies-from-browser', 'chrome',
-        '-f', 'best[ext=mp4]',
-        '-o', videoPath,
-        '--no-check-certificates',
-        '--no-cache-dir',
-        videoUrl
-      ]);
-
-      let errorOutput = '';
-      ytdlp.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-        console.error(`yt-dlp error: ${data}`);
-      });
-
-      ytdlp.on('close', (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          console.error('Erro completo do yt-dlp:', errorOutput);
-          reject(new Error(`Erro ao baixar o vídeo. Por favor, verifique se o URL está correto e se o vídeo está disponível publicamente.`));
-        }
-      });
-    });
+    await downloadVideo(videoUrl, videoPath);
 
     const videoProcessor = new VideoProcessor();
     const result = await videoProcessor.processVideo(
