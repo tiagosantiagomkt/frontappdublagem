@@ -6,12 +6,16 @@ WORKDIR /app
 RUN apk add --no-cache \
     libc6-compat \
     ffmpeg \
+    ffmpeg-dev \
+    ffmpeg-libs \
     python3 \
     py3-pip \
     build-base \
     git \
     cmake \
-    python3-dev
+    python3-dev \
+    pkgconfig \
+    linux-headers
 
 # Configura o ambiente Python
 ENV PYTHONUNBUFFERED=1 \
@@ -34,9 +38,11 @@ RUN pip install --no-cache-dir \
 
 # Instala as outras dependências Python
 RUN pip install --no-cache-dir \
-    faster-whisper \
+    gTTS \
     googletrans==3.1.0a0 \
-    gTTS
+    numpy \
+    ctranslate2 \
+    faster-whisper
 
 # Clona e compila whisper.cpp como alternativa
 RUN git clone https://github.com/ggerganov/whisper.cpp.git && \
