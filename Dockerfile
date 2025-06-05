@@ -2,6 +2,17 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Configura variáveis de ambiente para o Chrome
+ENV CHROME_BIN=/usr/bin/google-chrome \
+    CHROME_PATH=/usr/bin/google-chrome \
+    DISPLAY=:99 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    XDG_RUNTIME_DIR=/tmp/runtime-root \
+    DBUS_SESSION_BUS_ADDRESS=/dev/null
+
 # Instala o Node.js e outras dependências necessárias
 RUN apt-get update && apt-get install -y \
     curl \
@@ -12,6 +23,8 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     python3-pip \
     gnupg \
+    xvfb \
+    dbus \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && pip3 install yt-dlp \
@@ -22,15 +35,33 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y google-chrome-stable \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    # Configura o diretório do Chrome
+    # Configura diretórios necessários
     && mkdir -p /root/.config/google-chrome \
-    && google-chrome --no-sandbox --headless --disable-gpu --remote-debugging-port=9222 --disable-dev-shm-usage about:blank
-
-# Configura o ambiente Python
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    && mkdir -p /tmp/runtime-root \
+    && chmod 0700 /tmp/runtime-root \
+    # Inicializa o Chrome com todas as flags necessárias
+    && (Xvfb :99 -screen 0 1024x768x16 &) \
+    && google-chrome \
+        --no-sandbox \
+        --headless \
+        --disable-gpu \
+        --disable-dev-shm-usage \
+        --disable-software-rasterizer \
+        --disable-gpu-sandbox \
+        --disable-gpu-compositing \
+        --no-first-run \
+        --no-default-browser-check \
+        --disable-background-networking \
+        --disable-background-timer-throttling \
+        --disable-client-side-phishing-detection \
+        --disable-default-apps \
+        --disable-extensions \
+        --disable-sync \
+        --disable-translate \
+        --metrics-recording-only \
+        --no-experiments \
+        --remote-debugging-port=9222 \
+        about:blank
 
 # Instala as dependências Python
 RUN pip install --no-cache-dir \
@@ -72,15 +103,23 @@ RUN mkdir -p .next/standalone/.next/static && \
 
 EXPOSE 3000
 
-# Define variável de ambiente para o modelo Whisper e configurações do Chrome
-ENV WHISPER_MODEL="base" \
-    CHROME_BIN="/usr/bin/google-chrome" \
-    PORT=3000 \
+# Define variável de ambiente para o modelo Whisper
+ENV PORT=3000 \
     NODE_ENV=production \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    WHISPER_MODEL="base"
 
 # Muda para o diretório standalone
 WORKDIR /app/.next/standalone
 
+# Script de inicialização
+COPY <<EOF /start.sh
+#!/bin/bash
+Xvfb :99 -screen 0 1024x768x16 &
+exec node server.js
+EOF
+
+RUN chmod +x /start.sh
+
 # Inicia a aplicação
-CMD ["node", "server.js"] 
+CMD ["/start.sh"] 
