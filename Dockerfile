@@ -38,10 +38,9 @@ RUN pip install --no-cache-dir \
 
 # Instala as outras dependências Python
 RUN pip install --no-cache-dir \
+    numpy==1.24.3 \
     gTTS \
     googletrans==3.1.0a0 \
-    numpy \
-    ctranslate2 \
     faster-whisper
 
 # Clona e compila whisper.cpp como alternativa
