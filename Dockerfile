@@ -28,8 +28,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Instala PyTorch primeiro (versão CPU-only para Alpine)
 RUN pip install --no-cache-dir \
-    torch==2.0.1 \
-    torchaudio==2.0.2 \
+    torch==2.2.0+cpu \
+    torchaudio==2.2.0+cpu \
     --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Instala as outras dependências Python
