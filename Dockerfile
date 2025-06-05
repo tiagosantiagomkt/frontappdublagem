@@ -31,7 +31,8 @@ RUN pip install --no-cache-dir \
     numpy \
     gTTS \
     googletrans==3.1.0a0 \
-    faster-whisper
+    faster-whisper \
+    pytube==15.0.0
 
 # Copia os arquivos de configuração
 COPY package*.json ./

@@ -13,40 +13,38 @@ export const config = {
 
 async function downloadVideo(videoUrl: string, outputPath: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    const ytdlp = spawn('yt-dlp', [
-      '--format', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-      '--output', outputPath,
-      '--no-check-certificates',
-      '--no-cache-dir',
-      '--no-warnings',
-      '--ignore-errors',
-      '--extract-audio',
-      '--keep-video',
-      '--force-ipv4',
-      '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      '--add-header', 'Accept-Language:en-US,en;q=0.9',
-      '--sleep-interval', '1',
-      '--max-sleep-interval', '3',
-      '--geo-bypass',
-      '--no-playlist',
-      videoUrl
+    const pythonScript = spawn('python3', [
+      'services/youtubeDownloader.py',
+      videoUrl,
+      outputPath
     ]);
 
+    let output = '';
+    pythonScript.stdout.on('data', (data) => {
+      output += data.toString();
+      console.log(`Python output: ${data}`);
+    });
+
     let errorOutput = '';
-    ytdlp.stderr.on('data', (data) => {
+    pythonScript.stderr.on('data', (data) => {
       errorOutput += data.toString();
-      console.error(`yt-dlp error: ${data}`);
+      console.error(`Python error: ${data}`);
     });
 
-    ytdlp.stdout.on('data', (data) => {
-      console.log(`yt-dlp output: ${data}`);
-    });
-
-    ytdlp.on('close', (code) => {
+    pythonScript.on('close', (code) => {
       if (code === 0) {
-        resolve();
+        try {
+          const result = JSON.parse(output);
+          if (result.success) {
+            resolve();
+          } else {
+            reject(new Error(result.error || 'Erro desconhecido ao baixar o vídeo'));
+          }
+        } catch (e) {
+          reject(new Error('Erro ao processar resposta do script Python'));
+        }
       } else {
-        console.error('Erro completo do yt-dlp:', errorOutput);
+        console.error('Erro completo do Python:', errorOutput);
         reject(new Error('Não foi possível baixar o vídeo. Por favor, verifique se o URL está correto e se o vídeo está disponível.'));
       }
     });
