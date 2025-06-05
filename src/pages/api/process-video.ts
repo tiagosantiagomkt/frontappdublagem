@@ -32,16 +32,21 @@ export default async function handler(
     const tempDir = path.join(os.tmpdir(), 'video-processing');
     await fs.mkdir(tempDir, { recursive: true });
 
-    // Download do vídeo usando yt-dlp
+    // Download do vídeo usando yt-dlp com cookies do Chrome
     const videoPath = path.join(tempDir, `${Date.now()}.mp4`);
     await new Promise<void>((resolve, reject) => {
       const ytdlp = spawn('yt-dlp', [
+        '--cookies-from-browser', 'chrome',
         '-f', 'best[ext=mp4]',
         '-o', videoPath,
+        '--no-check-certificates',
+        '--no-cache-dir',
         videoUrl
       ]);
 
+      let errorOutput = '';
       ytdlp.stderr.on('data', (data) => {
+        errorOutput += data.toString();
         console.error(`yt-dlp error: ${data}`);
       });
 
@@ -49,7 +54,8 @@ export default async function handler(
         if (code === 0) {
           resolve();
         } else {
-          reject(new Error(`yt-dlp failed with code ${code}`));
+          console.error('Erro completo do yt-dlp:', errorOutput);
+          reject(new Error(`Erro ao baixar o vídeo. Por favor, verifique se o URL está correto e se o vídeo está disponível publicamente.`));
         }
       });
     });
@@ -87,7 +93,7 @@ export default async function handler(
   } catch (error) {
     console.error('Erro ao processar requisição:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
+      error: error instanceof Error ? error.message : 'Erro interno do servidor',
     });
   }
 } 

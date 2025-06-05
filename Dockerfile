@@ -11,9 +11,15 @@ RUN apt-get update && apt-get install -y \
     cmake \
     pkg-config \
     python3-pip \
+    gnupg \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && pip3 install yt-dlp \
+    # Instala o Google Chrome
+    && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -54,8 +60,9 @@ RUN npm run build
 
 EXPOSE 3000
 
-# Define variável de ambiente para o modelo Whisper
-ENV WHISPER_MODEL="base"
+# Define variável de ambiente para o modelo Whisper e configurações do Chrome
+ENV WHISPER_MODEL="base" \
+    CHROME_BIN="/usr/bin/google-chrome"
 
-# Inicia a aplicação
-CMD ["npm", "start"] 
+# Inicia a aplicação usando o servidor standalone do Next.js
+CMD ["node", ".next/standalone/server.js"] 
