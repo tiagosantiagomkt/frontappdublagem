@@ -1,26 +1,19 @@
-FROM node:18-alpine
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Instala as dependências necessárias para o build e processamento de mídia
-RUN apk add --no-cache \
-    libc6-compat \
+# Instala o Node.js e outras dependências necessárias
+RUN apt-get update && apt-get install -y \
+    curl \
     ffmpeg \
-    ffmpeg-dev \
-    ffmpeg-libs \
-    python3 \
-    py3-pip \
-    py3-numpy \
-    py3-scipy \
-    py3-setuptools \
-    build-base \
+    build-essential \
     git \
     cmake \
-    python3-dev \
-    pkgconfig \
-    linux-headers \
-    rust \
-    cargo
+    pkg-config \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Configura o ambiente Python
 ENV PYTHONUNBUFFERED=1 \
@@ -28,23 +21,18 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Cria e configura um ambiente virtual Python
-RUN python3 -m venv /opt/venv && \
-    /opt/venv/bin/pip install --upgrade pip setuptools wheel
-
-# Ativa o ambiente virtual e instala as dependências Python
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Instala PyTorch primeiro (versão CPU-only para Alpine)
+# Instala as dependências Python
 RUN pip install --no-cache-dir \
     torch==2.2.0+cpu \
     torchaudio==2.2.0+cpu \
     --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Instala as dependências Python uma por uma
-RUN pip install --no-cache-dir gTTS && \
-    pip install --no-cache-dir googletrans==3.1.0a0 && \
-    pip install --no-cache-dir faster-whisper
+# Instala as outras dependências Python
+RUN pip install --no-cache-dir \
+    numpy \
+    gTTS \
+    googletrans==3.1.0a0 \
+    faster-whisper
 
 # Clona e compila whisper.cpp como alternativa
 RUN git clone https://github.com/ggerganov/whisper.cpp.git && \
