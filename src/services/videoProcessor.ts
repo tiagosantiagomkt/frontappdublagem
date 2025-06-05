@@ -65,12 +65,27 @@ export class VideoProcessor {
 
   async transcribeAudio(audioPath: string): Promise<string> {
     const outputPath = path.join(this.tempDir, `${uuidv4()}.txt`);
-    await this.executeCommand('whisper', [
-      '--model', process.env.WHISPER_MODEL || 'base',
-      '--output_dir', this.tempDir,
-      '--output_format', 'txt',
-      audioPath
-    ]);
+    
+    // Usando Python com faster-whisper
+    const pythonScript = `
+from faster_whisper import WhisperModel
+import sys
+
+model_size = "${process.env.WHISPER_MODEL || 'base'}"
+model = WhisperModel(model_size, device="cpu", compute_type="int8")
+
+segments, info = model.transcribe("${audioPath}", beam_size=1)
+
+with open("${outputPath}", "w", encoding="utf-8") as f:
+    for segment in segments:
+        f.write(segment.text + "\\n")
+    `;
+    
+    const tempScriptPath = path.join(this.tempDir, `${uuidv4()}.py`);
+    await fs.writeFile(tempScriptPath, pythonScript);
+    await this.executeCommand('python3', [tempScriptPath]);
+    await fs.unlink(tempScriptPath);
+    
     return outputPath;
   }
 

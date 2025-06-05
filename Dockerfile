@@ -25,12 +25,20 @@ RUN python3 -m venv /opt/venv && \
 
 # Ativa o ambiente virtual e instala as dependências Python
 ENV PATH="/opt/venv/bin:$PATH"
+
+# Instala PyTorch primeiro (versão CPU-only para Alpine)
 RUN pip install --no-cache-dir \
-    openai-whisper \
+    torch==2.0.1 \
+    torchaudio==2.0.2 \
+    --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Instala as outras dependências Python
+RUN pip install --no-cache-dir \
+    faster-whisper \
     googletrans==3.1.0a0 \
     gTTS
 
-# Clona e compila whisper.cpp
+# Clona e compila whisper.cpp como alternativa
 RUN git clone https://github.com/ggerganov/whisper.cpp.git && \
     cd whisper.cpp && \
     make && \
