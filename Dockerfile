@@ -10,8 +10,10 @@ RUN apt-get update && apt-get install -y \
     git \
     cmake \
     pkg-config \
+    python3-pip \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
+    && pip3 install yt-dlp \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

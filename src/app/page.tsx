@@ -1,27 +1,22 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [processedVideo, setProcessedVideo] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [videoUrl, setVideoUrl] = useState('');
   const [targetLanguage, setTargetLanguage] = useState('pt');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!fileInputRef.current?.files?.[0]) {
-      setMessage('Por favor, selecione um vídeo para processar');
+    if (!videoUrl.trim()) {
+      setMessage('Por favor, insira a URL do vídeo para processar');
       return;
     }
-
-    const file = fileInputRef.current.files[0];
-    const formData = new FormData();
-    formData.append('video', file);
-    formData.append('targetLanguage', targetLanguage);
 
     try {
       setIsLoading(true);
@@ -32,7 +27,13 @@ export default function Home() {
       
       const response = await fetch('/api/process-video', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoUrl,
+          targetLanguage,
+        }),
       });
 
       if (!response.ok) {
@@ -42,13 +43,10 @@ export default function Home() {
 
       // Criar URL do blob para o vídeo processado
       const videoBlob = await response.blob();
-      const videoUrl = URL.createObjectURL(videoBlob);
-      setProcessedVideo(videoUrl);
+      const processedVideoUrl = URL.createObjectURL(videoBlob);
+      setProcessedVideo(processedVideoUrl);
       setMessage('Vídeo processado com sucesso!');
-      
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setVideoUrl('');
     } catch (error) {
       console.error('Erro ao processar vídeo:', error);
       setMessage(error instanceof Error ? error.message : 'Erro ao processar o vídeo');
@@ -64,19 +62,20 @@ export default function Home() {
           App de Dublagem
         </h1>
         <p className="text-text-secondary text-center mb-12">
-          Selecione um vídeo para começar a dublagem
+          Cole a URL do vídeo público que você deseja dublar
         </p>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col space-y-4">
-            <label htmlFor="video" className="text-text-primary font-medium">
-              Selecione o vídeo:
+            <label htmlFor="videoUrl" className="text-text-primary font-medium">
+              URL do vídeo:
             </label>
             <input
-              type="file"
-              id="video"
-              ref={fileInputRef}
-              accept="video/*"
+              type="url"
+              id="videoUrl"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
               disabled={isLoading}
             />

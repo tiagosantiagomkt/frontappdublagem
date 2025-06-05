@@ -1,13 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import formidable from 'formidable';
 import { VideoProcessor } from '@/services/videoProcessor';
 import path from 'path';
 import { promises as fs } from 'fs';
 import os from 'os';
+import { spawn } from 'child_process';
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: true,
   },
 };
 
@@ -20,29 +20,43 @@ export default async function handler(
   }
 
   try {
-    const form = formidable({
-      uploadDir: os.tmpdir(),
-      keepExtensions: true,
-      maxFileSize: 100 * 1024 * 1024, // 100MB
-    });
+    const { videoUrl, targetLanguage } = req.body;
 
-    const [fields, files] = await form.parse(req) as [
-      formidable.Fields,
-      formidable.Files
-    ];
-
-    const videoFile = files.video?.[0];
-    const targetLanguage = fields.targetLanguage?.[0];
-
-    if (!videoFile || !targetLanguage) {
+    if (!videoUrl || !targetLanguage) {
       return res.status(400).json({
-        error: 'Arquivo de vídeo e idioma de destino são obrigatórios',
+        error: 'URL do vídeo e idioma de destino são obrigatórios',
       });
     }
 
+    // Criar diretório temporário
+    const tempDir = path.join(os.tmpdir(), 'video-processing');
+    await fs.mkdir(tempDir, { recursive: true });
+
+    // Download do vídeo usando yt-dlp
+    const videoPath = path.join(tempDir, `${Date.now()}.mp4`);
+    await new Promise<void>((resolve, reject) => {
+      const ytdlp = spawn('yt-dlp', [
+        '-f', 'best[ext=mp4]',
+        '-o', videoPath,
+        videoUrl
+      ]);
+
+      ytdlp.stderr.on('data', (data) => {
+        console.error(`yt-dlp error: ${data}`);
+      });
+
+      ytdlp.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`yt-dlp failed with code ${code}`));
+        }
+      });
+    });
+
     const videoProcessor = new VideoProcessor();
     const result = await videoProcessor.processVideo(
-      videoFile.filepath,
+      videoPath,
       targetLanguage
     );
 
@@ -67,7 +81,7 @@ export default async function handler(
 
     // Limpa os arquivos temporários
     await Promise.all([
-      fs.unlink(videoFile.filepath),
+      fs.unlink(videoPath),
       fs.unlink(result.outputPath),
     ]).catch(console.error);
   } catch (error) {

@@ -5,7 +5,7 @@ Uma aplicação moderna para dublagem de vídeos, construída com Next.js e Type
 ## Características
 
 - Interface moderna e minimalista
-- Upload de vídeos locais
+- Processamento de vídeos por URL (YouTube e outros sites suportados)
 - Processamento local de áudio e vídeo
 - Suporte a múltiplos idiomas
 - Design responsivo
@@ -17,6 +17,7 @@ Uma aplicação moderna para dublagem de vídeos, construída com Next.js e Type
 - TypeScript
 - Tailwind CSS
 - FFmpeg para processamento de vídeo
+- yt-dlp para download de vídeos
 - Whisper para transcrição de áudio
 - Google Translate para tradução
 - gTTS para síntese de voz
@@ -28,6 +29,7 @@ Uma aplicação moderna para dublagem de vídeos, construída com Next.js e Type
 - Python 3.8 ou superior
 - FFmpeg
 - Git
+- yt-dlp
 
 ## Como Executar Localmente
 
@@ -41,33 +43,25 @@ cd app-dublagem
 ```bash
 sudo apt-get update
 sudo apt-get install -y ffmpeg python3 python3-pip build-essential git cmake
+pip3 install yt-dlp
 ```
 
 3. Instale as dependências Python:
 ```bash
-pip3 install openai-whisper googletrans==3.1.0a0 gTTS
+pip3 install faster-whisper googletrans==3.1.0a0 gTTS
 ```
 
-4. Clone e compile whisper.cpp:
-```bash
-git clone https://github.com/ggerganov/whisper.cpp.git
-cd whisper.cpp
-make
-sudo cp whisper /usr/local/bin/
-cd ..
-```
-
-5. Instale as dependências Node.js:
+4. Instale as dependências Node.js:
 ```bash
 npm install
 ```
 
-6. Execute o servidor de desenvolvimento:
+5. Execute o servidor de desenvolvimento:
 ```bash
 npm run dev
 ```
 
-7. Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
+6. Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 ## Deploy com Docker
 
