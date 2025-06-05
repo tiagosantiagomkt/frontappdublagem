@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     ffmpeg-libs \
     python3 \
     py3-pip \
+    py3-numpy \
     build-base \
     git \
     cmake \
@@ -38,7 +39,6 @@ RUN pip install --no-cache-dir \
 
 # Instala as outras dependências Python
 RUN pip install --no-cache-dir \
-    numpy==1.24.3 \
     gTTS \
     googletrans==3.1.0a0 \
     faster-whisper
