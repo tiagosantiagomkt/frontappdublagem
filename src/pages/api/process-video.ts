@@ -3,7 +3,7 @@ import { VideoProcessor } from '@/services/videoProcessor';
 import path from 'path';
 import { promises as fs } from 'fs';
 import os from 'os';
-import { spawn } from 'child_process';
+import ytdl from 'ytdl-core';
 
 export const config = {
   api: {
@@ -12,43 +12,47 @@ export const config = {
 };
 
 async function downloadVideo(videoUrl: string, outputPath: string): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const pythonScript = spawn('python3', [
-      'services/youtubeDownloader.py',
-      videoUrl,
-      outputPath
-    ]);
+  try {
+    // Verifica se a URL é válida
+    if (!ytdl.validateURL(videoUrl)) {
+      throw new Error('URL do YouTube inválida');
+    }
 
-    let output = '';
-    pythonScript.stdout.on('data', (data) => {
-      output += data.toString();
-      console.log(`Python output: ${data}`);
+    // Obtém informações do vídeo
+    const info = await ytdl.getInfo(videoUrl);
+    
+    // Pega o formato com melhor qualidade que inclui vídeo e áudio
+    const format = ytdl.chooseFormat(info.formats, { 
+      quality: 'highest',
+      filter: 'audioandvideo'
     });
 
-    let errorOutput = '';
-    pythonScript.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-      console.error(`Python error: ${data}`);
-    });
+    if (!format) {
+      throw new Error('Não foi possível encontrar um formato adequado para download');
+    }
 
-    pythonScript.on('close', (code) => {
-      if (code === 0) {
-        try {
-          const result = JSON.parse(output);
-          if (result.success) {
-            resolve();
-          } else {
-            reject(new Error(result.error || 'Erro desconhecido ao baixar o vídeo'));
-          }
-        } catch (e) {
-          reject(new Error('Erro ao processar resposta do script Python'));
-        }
-      } else {
-        console.error('Erro completo do Python:', errorOutput);
-        reject(new Error('Não foi possível baixar o vídeo. Por favor, verifique se o URL está correto e se o vídeo está disponível.'));
-      }
+    // Faz o download do vídeo
+    return new Promise((resolve, reject) => {
+      const stream = ytdl.downloadFromInfo(info, { format });
+      const writeStream = fs.createWriteStream(outputPath);
+
+      stream.pipe(writeStream);
+
+      writeStream.on('finish', () => {
+        resolve();
+      });
+
+      writeStream.on('error', (error) => {
+        reject(error);
+      });
+
+      stream.on('error', (error) => {
+        reject(error);
+      });
     });
-  });
+  } catch (error) {
+    throw new Error(`Erro ao baixar vídeo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  }
 }
 
 export default async function handler(

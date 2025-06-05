@@ -21,7 +21,8 @@
     "uuid": "^9.0.1",
     "formidable": "^3.5.1",
     "@types/formidable": "^3.4.5",
-    "@types/uuid": "^9.0.8"
+    "@types/uuid": "^9.0.8",
+    "ytdl-core": "^4.11.5"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",

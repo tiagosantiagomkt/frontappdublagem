@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
-    && pip3 install yt-dlp \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -31,8 +30,7 @@ RUN pip install --no-cache-dir \
     numpy \
     gTTS \
     googletrans==3.1.0a0 \
-    faster-whisper \
-    pytube==15.0.0
+    faster-whisper
 
 # Copia os arquivos de configuração
 COPY package*.json ./
