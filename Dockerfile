@@ -55,12 +55,17 @@ RUN npm install
 # Copia o resto dos arquivos
 COPY . .
 
+# Cria diretório public se não existir
+RUN mkdir -p public
+
 # Constrói a aplicação
 RUN npm run build
 
 # Copia os arquivos necessários para o modo standalone
-RUN cp -r .next/static .next/standalone/.next/ && \
-    cp -r public .next/standalone/
+RUN mkdir -p .next/standalone/.next/static && \
+    cp -r .next/static/* .next/standalone/.next/static/ && \
+    mkdir -p .next/standalone/public && \
+    cp -r public/* .next/standalone/public/ || true
 
 EXPOSE 3000
 
