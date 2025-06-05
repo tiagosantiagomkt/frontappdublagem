@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { VideoProcessor } from '@/services/videoProcessor';
 import path from 'path';
-import fs from 'fs';
-import { promises as fsPromises } from 'fs';
+import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
 import os from 'os';
 import ytdl from 'ytdl-core';
 
@@ -33,7 +33,7 @@ async function downloadVideo(videoUrl: string, outputPath: string): Promise<void
     }
 
     // Faz o download do vídeo
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const stream = ytdl.downloadFromInfo(info, { format });
       const writeStream = fs.createWriteStream(outputPath);
 
