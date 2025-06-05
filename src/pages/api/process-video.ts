@@ -4,6 +4,7 @@ import path from 'path';
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import os from 'os';
+import { spawn } from 'child_process';
 import ytdl from 'ytdl-core';
 
 export const config = {
@@ -14,77 +15,38 @@ export const config = {
 
 async function downloadVideo(videoUrl: string, outputPath: string): Promise<void> {
   try {
-    // Verifica se a URL é válida
     if (!ytdl.validateURL(videoUrl)) {
       throw new Error('URL do YouTube inválida');
     }
 
-    // Configurações personalizadas para o ytdl
-    const options = {
-      quality: 'highestvideo',
-      filter: (format: ytdl.videoFormat) => format.container === 'mp4',
-      requestOptions: {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-User': '?1',
-          'Upgrade-Insecure-Requests': '1',
-          'Cookie': ''
+    return await new Promise((resolve, reject) => {
+      const args = [
+        videoUrl,
+        '--merge-output-format', 'mp4',
+        '-f', 'bestvideo[ext=mp4]+bestaudio/best',
+        '--no-part',
+        '--no-playlist',
+        '--quiet',
+        '--cookies-from-browser', 'chrome',
+        '-o', outputPath,
+      ];
+
+      const ytdlp = spawn('yt-dlp', args);
+
+      ytdlp.stderr.on('data', (data) => {
+        console.error(data.toString());
+      });
+
+      ytdlp.on('error', (err) => {
+        reject(err);
+      });
+
+      ytdlp.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`yt-dlp exited with code ${code}`));
         }
-      }
-    };
-
-    // Obtém informações do vídeo com as opções personalizadas
-    const info = await ytdl.getInfo(videoUrl, options);
-    
-    // Encontra o melhor formato disponível
-    const format = ytdl.chooseFormat(info.formats, { 
-      quality: 'highest',
-      filter: 'audioandvideo'
-    });
-
-    if (!format) {
-      throw new Error('Não foi possível encontrar um formato adequado para download');
-    }
-
-    // Faz o download do vídeo
-    return new Promise<void>((resolve, reject) => {
-      const stream = ytdl.downloadFromInfo(info, { 
-        ...options,
-        format
-      });
-
-      const writeStream = fs.createWriteStream(outputPath);
-
-      let startTime = Date.now();
-      let downloadedBytes = 0;
-
-      stream.on('data', (chunk) => {
-        downloadedBytes += chunk.length;
-        const elapsedTime = (Date.now() - startTime) / 1000;
-        const downloadSpeed = (downloadedBytes / (1024 * 1024) / elapsedTime).toFixed(2);
-        console.log(`Download em progresso: ${downloadSpeed} MB/s`);
-      });
-
-      stream.pipe(writeStream);
-
-      writeStream.on('finish', () => {
-        console.log('Download concluído com sucesso');
-        resolve();
-      });
-
-      writeStream.on('error', (error) => {
-        console.error('Erro no writeStream:', error);
-        reject(error);
-      });
-
-      stream.on('error', (error) => {
-        console.error('Erro no stream:', error);
-        reject(error);
       });
     });
   } catch (error) {
